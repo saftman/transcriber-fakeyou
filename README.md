@@ -2,7 +2,9 @@
 
 This is a simple audio transcription program that transcribes WAV files using the Google Speech Recognition API. It provides a user-friendly interface for selecting the input folder, output file, and language.
 
-Its 69% Accurate i will update the code more for more accuracy.
+German is 69% Accurate, France/Spanish i didnt tested it.
+English is 99% Accurate i will update the code more for more accuracy.
+
 
 ## Prerequisites
 
