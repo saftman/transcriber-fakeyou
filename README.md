@@ -14,7 +14,7 @@ This is a simple audio transcription program that transcribes WAV files using th
 -   tqdm: pip install tqdm
 
 ## Installation
-__Version 1.0
+Version 1.0
   https://github.com/saftman/transcriber-fakeyou/blob/main/Transcribe.py
 
 
