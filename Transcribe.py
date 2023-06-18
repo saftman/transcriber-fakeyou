@@ -25,9 +25,9 @@ def transcribe_audio_files(folder_path, output_file, language, progress_label):
                         first_word = text.split()[0].capitalize()
                         rest_of_sentence = " ".join(text.split()[1:])
                         if rest_of_sentence.endswith("?"):
-                            transcript = f"wavs/{file}| {first_word} {rest_of_sentence}"
+                            transcript = f"wavs/{file}|{first_word} {rest_of_sentence}"
                         else:
-                            transcript = f"wavs/{file}| {first_word} {rest_of_sentence}."
+                            transcript = f"wavs/{file}|{first_word} {rest_of_sentence}."
                         f.write(transcript + "\n")
                     except sr.UnknownValueError:
                         print(f"Unable to transcribe {file_path}")
