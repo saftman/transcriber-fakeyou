@@ -20,9 +20,9 @@ I Updated the Whole Programm changed from tkinter to PyTq5 and added dark mode, 
 -   tqdm: pip install tqdm
 
 ## Installation
-Version 1.0
+Version 2.0
   https://github.com/saftman/transcriber-fakeyou/blob/main/Transcribe.py
 
 
 Download the Python file and start it! Then you are Ready to auto Transcribe for Fakeyou.com!
-![grafik](https://github.com/saftman/transcriber-fakeyou/assets/80041584/cd2b510e-8c7c-4754-ba43-0913d20f22f1)
+![grafik](https://i.ibb.co/HDGXTNY/grafik.png)
