@@ -15,9 +15,11 @@ I Updated the Whole Programm changed from tkinter to PyTq5 and added dark mode, 
 - pip
 
 ## Python Packages
--   tkinter: pip install tkinter
--   speech_recognition: pip install SpeechRecognition
--   tqdm: pip install tqdm
+- PyQt5==5.15.4
+- speech_recognition==3.8.1
+- tqdm==4.62.3
+- subprocess32==3.5.4
+
 
 ## Installation
 Version 2.0
