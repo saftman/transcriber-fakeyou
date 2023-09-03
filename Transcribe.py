@@ -1,124 +1,170 @@
+import sys
 import os
-import tkinter as tk
-from tkinter import filedialog
-from tkinter import messagebox
 import speech_recognition as sr
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QLabel,
+    QPushButton,
+    QFileDialog,
+    QLineEdit,
+    QComboBox,
+)
+from PyQt5.QtGui import QPalette, QColor, QIcon
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
+import threading
 
-def transcribe_audio_files(folder_path, output_file, language, progress_label):
+def transcribe_file(args):
+    file, folder_path, language = args
     r = sr.Recognizer()
+    file_path = os.path.join(folder_path, file)
+    try:
+        with sr.AudioFile(file_path) as source:
+            audio = r.record(source)
+            text = r.recognize_google(audio, language=language)
+            first_word = text.split()[0].capitalize()
+            rest_of_sentence = " ".join(text.split()[1:])
+            if rest_of_sentence.endswith("?"):
+                transcript = f"wavs/{file}|{first_word} {rest_of_sentence}"
+            else:
+                transcript = f"wavs/{file}|{first_word} {rest_of_sentence}."
+            return transcript
+    except sr.UnknownValueError:
+        return f"Unable to transcribe {file_path}"
+    except sr.RequestError as e:
+        return f"Error occurred while transcribing {file_path}: {e}"
 
-    files = os.listdir(folder_path)
+class TranscriptionThread(QThread):
+    finished = pyqtSignal()
 
-    with open(output_file, "w") as f:
-        progress = 0
-        total_files = len(files)
-        progress_label.config(text=f"{progress}% Done {progress} / {total_files}")
+    def __init__(self, folder_path, output_file, language):
+        super().__init__()
+        self.folder_path = folder_path
+        self.output_file = output_file
+        self.language = language
 
-        for file in tqdm(files, desc="Transcribing", unit="file"):
-            if file.endswith(".wav"):
-                file_path = os.path.join(folder_path, file)
-                with sr.AudioFile(file_path) as source:
-                    audio = r.record(source)
-                    try:
-                        text = r.recognize_google(audio, language=language)
-                        first_word = text.split()[0].capitalize()
-                        rest_of_sentence = " ".join(text.split()[1:])
-                        if rest_of_sentence.endswith("?"):
-                            transcript = f"wavs/{file}|{first_word} {rest_of_sentence}"
-                        else:
-                            transcript = f"wavs/{file}|{first_word} {rest_of_sentence}."
-                        f.write(transcript + "\n")
-                    except sr.UnknownValueError:
-                        print(f"Unable to transcribe {file_path}")
-                    except sr.RequestError as e:
-                        print(f"Error occurred while transcribing {file_path}: {e}")
+    def run(self):
+        files = [(file, self.folder_path, self.language) for file in os.listdir(self.folder_path) if file.endswith(".wav")]
 
-            progress += 1
-            progress_percentage = (progress / total_files) * 100
-            progress_label.config(text=f"{progress_percentage:.2f}% Done {progress} / {total_files}")
-            root.update_idletasks()
+        with Pool(cpu_count()) as pool:
+            results = list(tqdm(pool.imap(transcribe_file, files, chunksize=1),
+                                total=len(files), desc="Transcribing"))
 
-def select_folder():
-    folder_path = filedialog.askdirectory(title="Select Folder Containing WAV Files", parent=root)
-    if folder_path:
-        folder_entry.delete(0, tk.END)
-        folder_entry.insert(tk.END, folder_path)
+        with open(self.output_file, "w") as f:
+            for result in results:
+                f.write(result + "\n")
 
-def select_output_file():
-    output_file_path = filedialog.asksaveasfilename(
-        title="Select Output File",
-        parent=root,
-        defaultextension=".txt",
-        filetypes=[("Text Files", "*.txt")]
-    )
-    if output_file_path:
-        output_file_entry.delete(0, tk.END)
-        output_file_entry.insert(tk.END, output_file_path)
+        self.finished.emit()
 
-def start_transcription():
-    folder_path = folder_entry.get()
-    output_file_path = output_file_entry.get()
-    language = language_var.get()
+class AudioTranscriptionApp(QWidget):
+    def __init__(self):
+        super().__init__()
 
-    if not folder_path:
-        messagebox.showerror("Error", "No folder selected.")
-        return
+        self.initUI()
 
-    if not output_file_path:
-        messagebox.showerror("Error", "No output file selected.")
-        return
+    def initUI(self):
+        self.setWindowTitle('Audio Transcription')
+        self.setGeometry(100, 100, 500, 400)
+        self.setWindowIcon(QIcon('icon.png'))
 
-    progress_label.config(text="Transcribing...")
-    root.update_idletasks()
+        # Dark mode
+        self.dark_mode = False
+        self.palette_light = self.palette()
+        self.palette_dark = QPalette()
+        self.palette_dark.setColor(QPalette.Window, QColor(45, 45, 45))
+        self.palette_dark.setColor(QPalette.WindowText, Qt.white)
+        self.palette_dark.setColor(QPalette.Button, QColor(45, 45, 45))
+        self.palette_dark.setColor(QPalette.ButtonText, Qt.white)
+        self.palette_dark.setColor(QPalette.Highlight, QColor(100, 100, 100))
+        self.setPalette(self.palette_light)
 
-    transcribe_audio_files(folder_path, output_file_path, language, progress_label)
+        self.folder_label = QLabel('Input Folder (WAVs):', self)
+        self.folder_label.setGeometry(20, 20, 200, 20)
 
-    progress_label.config(text="Transcription Complete")
-    messagebox.showinfo("Transcription Complete", f"Transcriptions saved to {output_file_path}")
+        self.folder_entry = QLineEdit(self)
+        self.folder_entry.setGeometry(20, 50, 300, 30)
 
-# Create Tkinter root window
-root = tk.Tk()
-root.title("Audio Transcription")
-root.geometry("500x400")
-root.configure(bg="lightgray")
+        self.folder_button = QPushButton('Browse', self)
+        self.folder_button.setGeometry(330, 50, 100, 30)
+        self.folder_button.clicked.connect(self.select_folder)
+        self.folder_button.setStyleSheet('border-radius: 15px;')
 
-# Input Folder Selection
-folder_label = tk.Label(root, text="Input Folder (WAVs):", bg="lightgray", font=("Arial", 12))
-folder_label.pack(pady=10)
-folder_frame = tk.Frame(root, bg="lightgray")
-folder_frame.pack()
-folder_entry = tk.Entry(folder_frame, width=30, font=("Arial", 10))
-folder_entry.pack(side=tk.LEFT, padx=5)
-folder_button = tk.Button(folder_frame, text="Browse", command=select_folder, font=("Arial", 10))
-folder_button.pack(side=tk.LEFT)
+        self.output_label = QLabel('Output File:', self)
+        self.output_label.setGeometry(20, 100, 200, 20)
 
-# Output File Selection
-output_file_label = tk.Label(root, text="Output File:", bg="lightgray", font=("Arial", 12))
-output_file_label.pack(pady=10)
-output_frame = tk.Frame(root, bg="lightgray")
-output_frame.pack()
-output_file_entry = tk.Entry(output_frame, width=30, font=("Arial", 10))
-output_file_entry.pack(side=tk.LEFT, padx=5)
-output_file_button = tk.Button(output_frame, text="Browse", command=select_output_file, font=("Arial", 10))
-output_file_button.pack(side=tk.LEFT)
+        self.output_entry = QLineEdit(self)
+        self.output_entry.setGeometry(20, 130, 300, 30)
 
-# Language Selection
-language_label = tk.Label(root, text="Language:", bg="lightgray", font=("Arial", 12))
-language_label.pack(pady=10)
-language_frame = tk.Frame(root, bg="lightgray")
-language_frame.pack()
-language_var = tk.StringVar(root, "en-us")
-language_dropdown = tk.OptionMenu(language_frame, language_var, "en-us", "en-gb", "de", "fr", "es")
-language_dropdown.config(font=("Arial", 10))
-language_dropdown.pack(padx=10, pady=5)
+        self.output_button = QPushButton('Browse', self)
+        self.output_button.setGeometry(330, 130, 100, 30)
+        self.output_button.clicked.connect(self.select_output_file)
+        self.output_button.setStyleSheet('border-radius: 15px;')
 
-# Progress Label
-progress_label = tk.Label(root, text="", bg="lightgray", font=("Arial", 12))
-progress_label.pack(pady=10)
+        self.language_label = QLabel('Language:', self)
+        self.language_label.setGeometry(20, 180, 200, 20)
 
-# Start Transcription Button
-start_button = tk.Button(root, text="Start Transcription", command=start_transcription, font=("Arial", 12))
-start_button.pack(pady=10)
+        self.language_dropdown = QComboBox(self)
+        self.language_dropdown.setGeometry(20, 210, 150, 30)
+        self.language_dropdown.addItems(["en-us", "en-gb", "de", "fr", "es"])
 
-root.mainloop()
+        self.progress_label = QLabel('', self)
+        self.progress_label.setGeometry(20, 260, 300, 20)
+
+        self.transcribe_button = QPushButton('Start Transcription', self)
+        self.transcribe_button.setGeometry(20, 300, 200, 40)
+        self.transcribe_button.clicked.connect(self.start_transcription)
+        self.transcribe_button.setStyleSheet('border-radius: 20px; background-color: #007ACC; color: white;')
+
+        self.dark_mode_button = QPushButton('Dark Mode', self)
+        self.dark_mode_button.setGeometry(20, 350, 100, 30)
+        self.dark_mode_button.clicked.connect(self.toggle_dark_mode)
+        self.dark_mode_button.setStyleSheet('border-radius: 15px; background-color: #303030; color: white;')
+
+    def toggle_dark_mode(self):
+        self.dark_mode = not self.dark_mode
+        if self.dark_mode:
+            self.setPalette(self.palette_dark)
+        else:
+            self.setPalette(self.palette_light)
+
+    def select_folder(self):
+        folder_path = QFileDialog.getExistingDirectory(self, 'Select Folder Containing WAV Files')
+        if folder_path:
+            self.folder_entry.setText(folder_path)
+
+    def select_output_file(self):
+        output_file_path, _ = QFileDialog.getSaveFileName(self, 'Select Output File', '', 'Text Files (*.txt)')
+        if output_file_path:
+            self.output_entry.setText(output_file_path)
+
+    def start_transcription(self):
+        folder_path = self.folder_entry.text()
+        output_file_path = self.output_entry.text()
+        language = self.language_dropdown.currentText()
+
+        if not folder_path:
+            self.progress_label.setText("Error: No folder selected.")
+            return
+
+        if not output_file_path:
+            self.progress_label.setText("Error: No output file selected.")
+            return
+
+        self.progress_label.setText("Transcribing...")
+
+        # Create and start the transcription thread
+        self.transcription_thread = TranscriptionThread(folder_path, output_file_path, language)
+        self.transcription_thread.finished.connect(self.transcription_complete)
+        self.transcription_thread.start()
+
+    def transcription_complete(self):
+        self.progress_label.setText("Transcription Complete")
+        os.startfile(self.folder_entry.text())  # Open the folder when done
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = AudioTranscriptionApp()
+    ex.show()
+    sys.exit(app.exec_())
