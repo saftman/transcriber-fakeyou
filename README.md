@@ -5,6 +5,9 @@ This is a simple audio transcription program that transcribes WAV files using th
 German is 69% Accurate, France/Spanish i didnt tested it.
 English is 99% Accurate i will update the code more for more accuracy.
 
+# Changelogs 2023 / Sep
+I Updated the Whole Programm changed from tkinter to PyTq5 and added dark mode, multi core using, etc, also add threading that the programm doesnt lag when transcribing (feels smoother :D)
+
 
 ## Prerequisites
 
