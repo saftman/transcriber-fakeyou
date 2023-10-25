@@ -31,6 +31,5 @@ Version 2.0
 
 
 
-
 Download the Python file and start it! Then you are Ready to auto Transcribe for Fakeyou.com!
 ![grafik](https://i.ibb.co/HDGXTNY/grafik.png)
