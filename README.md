@@ -25,6 +25,9 @@ I Updated the Whole Programm changed from tkinter to PyTq5 and added dark mode, 
 Version 2.0
   https://github.com/saftman/transcriber-fakeyou/blob/main/Transcribe.py
 
+[![Colab Version](https://your-image-url-in-google-drive.png)](https://drive.google.com/drive/124-eTGcOlsOdJbJRiC4AJ1VHn_ljf0Zg?usp=sharing)
+
+
 
 Download the Python file and start it! Then you are Ready to auto Transcribe for Fakeyou.com!
 ![grafik](https://i.ibb.co/HDGXTNY/grafik.png)
