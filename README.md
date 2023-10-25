@@ -25,7 +25,8 @@ I Updated the Whole Programm changed from tkinter to PyTq5 and added dark mode, 
 Version 2.0
   https://github.com/saftman/transcriber-fakeyou/blob/main/Transcribe.py
 
-[![Colab Version](https://your-image-url-in-google-drive.png)](https://drive.google.com/drive/124-eTGcOlsOdJbJRiC4AJ1VHn_ljf0Zg?usp=sharing)
+[![Colab Version](https://your-image-url-in-google-drive.png)]([https://drive.google.com/drive/124-eTGcOlsOdJbJRiC4AJ1VHn_ljf0Zg?usp=sharing](https://colab.research.google.com/drive/124-eTGcOlsOdJbJRiC4AJ1VHn_ljf0Zg?usp=sharing&authuser=2))
+
 
 
 
